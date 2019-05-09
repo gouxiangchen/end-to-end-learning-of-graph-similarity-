@@ -10,14 +10,6 @@ import math
 import re
 
 
-def get_dist(l1, l2):
-    r = 0.
-    for i in range(len(l1)):
-        k = (l1[i] - l2[i]) * (l1[i] - l2[i])
-        r += k
-    r = math.sqrt(r)
-    return r
-
 
 class myLayer(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -178,172 +170,32 @@ class graphConvNet(nn.Module):
         return Z
 
 
-def get_file_name(dir):
-    list = []
-    for root, dirs, files in os.walk(dir):
-        for file in files:
-            list.append(os.path.join(root, file))
-    return list
-
 
 mynet = graphConvNet()
 mynet.load_state_dict(torch.load('huge_dataset_model_total.para'))
-all_wrong = 0.
-all_count = 0
-filenames_x = get_file_name('../trainset-draw/')
-filenames_y = get_file_name('../trainset-draw/')
-# result_file = open('result_wrong_mixooo_128.txt', 'w')
-
-draw_file = open('intrain.txt', 'w')
+filename_x = './graph_samples/00sheep0.txt'
+filename_y = './graph_samples/1crime.txt'
 
 
-for ao in range(len(filenames_x)):
-    # print(type(i))
-    for pe in range(ao+1, len(filenames_x)):
-        # print(ao, pe)
-        filename_x = filenames_x[int(ao)]
-        filename_y = filenames_x[int(pe)]
-        f1 = filename_x.split('/')[-1]
-        f2 = filename_y.split('/')[-1]
-        fk1 = re.sub('[0-9]\d*', '', f1)
-        fk2 = re.sub('[0-9]\d*', '', f2)
+G1 = nx.read_edgelist(filename_x)
+G2 = nx.read_edgelist(filename_y)
+A1 = torch.Tensor(nx.to_numpy_matrix(G1))
+A2 = torch.Tensor(nx.to_numpy_matrix(G2))
+H1 = torch.eye(A1.size(0), 128)
+H2 = torch.eye(A2.size(0), 128)
+list1 = []
+list2 = []
+for node in G1.nodes:
+    list1.append(G1.degree(node))
+for node in G2.nodes:
+    list2.append(G2.degree(node))
+D1 = torch.diag(torch.Tensor(list1))
+D2 = torch.diag(torch.Tensor(list2))
+out = mynet(A1, D1, H1, A2, D2, H2)
 
-        # print(f1, f2)
-
-        if False:
-            pass
-        else:
-            G1 = nx.read_edgelist(filename_x)
-            G2 = nx.read_edgelist(filename_y)
-            A1 = torch.Tensor(nx.to_numpy_matrix(G1))
-            A2 = torch.Tensor(nx.to_numpy_matrix(G2))
-            H1 = torch.eye(A1.size(0), 128)
-            H2 = torch.eye(A2.size(0), 128)
-            list1 = []
-            list2 = []
-            for node in G1.nodes:
-                list1.append(G1.degree(node))
-            for node in G2.nodes:
-                list2.append(G2.degree(node))
-            D1 = torch.diag(torch.Tensor(list1))
-            D2 = torch.diag(torch.Tensor(list2))
-            out = mynet(A1, D1, H1, A2, D2, H2)
-            label1 = []
-            label2 = []
-            la1 = f1.split('.')[0]
-            la2 = f2.split('.')[0]
-            label1_name = '../all_label/' + la1 + '_label.txt'
-            label2_name = '../all_label/' + la2 + '_label.txt'
-            # label2_name = 'E:\\chen\\图卷积——小图标签\\train_label.txt'
-
-            file1 = open(label1_name, 'r')
-            file2 = open(label2_name, 'r')
-
-            for line in file1.readlines():
-                i = line.split()[1]
-                label1.append(int(i) + 1)
-            for line in file2.readlines():
-                i = line.split()[1]
-                label2.append(int(i) + 1)
-
-            label1 = np.array(label1)
-            label1 = label1 / sum(label1)
-            label1 = list(label1)
-
-            label2 = np.array(label2)
-            label2 = label2 / sum(label2)
-            label2 = list(label2)
-
-            label_1_log = []
-            label_2_log = []
-            for i in label1:
-                i = math.log(i)
-                label_1_log.append(i)
-            for i in label2:
-                i = math.log(i)
-                label_2_log.append(i)
-
-            l = get_dist(label_1_log, label_2_log)
-
-            # print(la1, la2, float(out.data), l)
-            # print(f1, f2, 'model out:', out, 'ground truth:', l, 'wrong rate:', abs(float(out.data) - l)/l, file=result_file)
-            # if l == 0:
-            #     print(float(out.data), l, filename_x, filename_y, file=draw_file)
-            # else :
-            #     print(float(out.data), l, file=draw_file)
+print('the GFD distance predicted between ' + filename_x + ' and ' + filename_y + ' is : ', float(out.data))
 
 
-            print(float(out.data), l, file=draw_file)
 
 
-            # all_count += 1
-            # all_wrong += abs(float(out.data) - l) / l
-            file1.close()
-            file2.close()
 
-
-draw_file.close()
-#
-#
-# filename_x = 'E:\\chen\\小图噪声\\mac.txt'
-# filename_x = 'E:\\chen\\图卷积——小图\\sheep.txt'
-# filename_y = 'E:\\chen\\图卷积——大图\\hypertext.txt'
-# G1 = nx.read_edgelist(filename_x)
-# G2 = nx.read_edgelist(filename_y)
-# A1 = torch.Tensor(nx.to_numpy_matrix(G1))
-# A2 = torch.Tensor(nx.to_numpy_matrix(G2))
-# H1 = torch.eye(A1.size(0), 128)
-# H2 = torch.eye(A2.size(0), 128)
-# list1 = []
-# list2 = []
-# for node in G1.nodes:
-#     list1.append(G1.degree(node))
-# for node in G2.nodes:
-#     list2.append(G2.degree(node))
-# D1 = torch.diag(torch.Tensor(list1))
-# D2 = torch.diag(torch.Tensor(list2))
-# out = mynet(A1, D1, H1, A2, D2, H2)
-# print(out)
-#
-# label1 = []
-# label2 = []
-# label1_name = 'E:\\chen\\git\\graphlet_counting-master\\hypertext_label.txt'
-# label2_name = 'E:\\chen\\图卷积——小图标签\\sheep_label.txt'
-# # label2_name = 'E:\\chen\\图卷积——小图标签\\train_label.txt'
-#
-# f1 = open(label1_name, 'r')
-# f2 = open(label2_name, 'r')
-#
-# for line in f1.readlines():
-#     i = line.split()[1]
-#     label1.append(int(i) + 1)
-# for line in f2.readlines():
-#     i = line.split()[1]
-#     label2.append(int(i) + 1)
-#
-# label1 = np.array(label1)
-# label1 = label1 / sum(label1)
-# label1 = list(label1)
-#
-# label2 = np.array(label2)
-# label2 = label2 / sum(label2)
-# label2 = list(label2)
-#
-# label_1_log = []
-# label_2_log = []
-# for i in label1:
-#     i = math.log(i)
-#     label_1_log.append(i)
-# for i in label2:
-#     i = math.log(i)
-#     label_2_log.append(i)
-#
-# l = get_dist(label_1_log, label_2_log)
-#
-# print(l)
-#
-#
-# f1.close()
-# f2.close()
-#
-#
