@@ -8,7 +8,7 @@ The version is poor implementation and not suitable for everyone, I will enrich 
 
 The train code is not available now. They need much more modification to be public.
 
-# requirement 
+# requirements 
 
 + numpy
 + torch (1.0)
